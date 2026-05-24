@@ -1,0 +1,17 @@
+{
+  "name": "brown",
+  "version": "0.1.0",
+  "description": "Brown plugin for Claude Code",
+  "author": {
+    "name": "identity16",
+    "email": "dnjswns0930@gmail.com"
+  },
+  "homepage": "https://github.com/identity16/brown",
+  "repository": "https://github.com/identity16/brown",
+  "license": "MIT",
+  "keywords": ["claude-code", "plugin"],
+  "commands": "./commands",
+  "agents": "./agents",
+  "skills": "./skills",
+  "hooks": "./hooks/hooks.json"
+}
