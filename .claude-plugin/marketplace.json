@@ -1,0 +1,22 @@
+{
+  "name": "brown",
+  "owner": {
+    "name": "identity16",
+    "email": "dnjswns0930@gmail.com",
+    "url": "https://github.com/identity16"
+  },
+  "metadata": {
+    "description": "Brown plugin marketplace",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "brown",
+      "source": ".",
+      "description": "Brown plugin for Claude Code",
+      "version": "0.1.0",
+      "category": "utilities",
+      "tags": ["claude-code", "plugin"]
+    }
+  ]
+}
