@@ -1,0 +1,32 @@
+name: Deploy worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "worker/**"
+      - ".github/workflows/deploy-worker.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Materialize wrangler.toml
+        working-directory: worker
+        env:
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+        run: |
+          if [ -z "$D1_DATABASE_ID" ]; then
+            echo "::error::D1_DATABASE_ID secret is not set"
+            exit 1
+          fi
+          sed "s|REPLACE_WITH_YOUR_D1_DATABASE_ID|$D1_DATABASE_ID|" wrangler.toml.example > wrangler.toml
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          workingDirectory: worker
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

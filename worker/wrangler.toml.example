@@ -1,0 +1,11 @@
+name = "brown-telemetry"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "brown_telemetry"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# Set via `wrangler secret put INGEST_KEY` — the plugin sends this as `x-brown-key`.
+# Leave unset to disable auth (not recommended).
