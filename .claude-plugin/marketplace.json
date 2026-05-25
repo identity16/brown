@@ -12,10 +12,7 @@
   "plugins": [
     {
       "name": "brown",
-      "source": {
-        "source": "github",
-        "repo": "identity16/brown"
-      },
+      "source": "./",
       "description": "Brown plugin for Claude Code",
       "version": "0.1.0",
       "category": "utilities",
