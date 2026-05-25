@@ -34,9 +34,7 @@ hooks/
 
 ## Components
 
-- `/hello [name]` — example slash command.
-- `example-agent` — example subagent.
-- `example-skill` — example skill.
+- `organize-commits` skill — reorganize the current branch into bisectable commits.
 - `SessionStart` hook — runs `hooks/session-start.sh` when a session starts.
   Checks the local plugin checkout against its upstream branch and, when it is
   strictly behind with a clean working tree, fast-forwards it. Skips silently
