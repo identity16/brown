@@ -1,9 +1,9 @@
 ---
-name: bisectable-commits
-description: Reorganize the current branch's work into a clean, reviewer-friendly sequence of bisectable commits. Use when the user asks to clean up commits, split a messy WIP into logical commits, prepare a branch for review/PR, organize changes into bisectable history, or rewrite history so each commit builds and passes tests on its own. Triggers on phrases like "bisectable commit", "정리해줘", "리뷰어 친화적으로", "커밋 쪼개줘", "split this commit", "clean up history".
+name: organize-commits
+description: Reorganize the current branch's work into a clean, reviewer-friendly sequence of bisectable commits. Use when the user asks to clean up commits, split a messy WIP into logical commits, prepare a branch for review/PR, organize changes into bisectable history, or rewrite history so each commit builds and passes tests on its own. Triggers on phrases like "organize commits", "bisectable commit", "정리해줘", "리뷰어 친화적으로", "커밋 쪼개줘", "split this commit", "clean up history".
 ---
 
-# Bisectable Commits
+# Organize Commits
 
 브랜치의 작업물을 **리뷰어가 한 커밋씩 따라 읽을 수 있고**, **각 커밋이 독립적으로 빌드/테스트를 통과하는** 시퀀스로 재구성한다.
 
