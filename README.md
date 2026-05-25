@@ -37,6 +37,11 @@ scripts/              # Scripts invoked by hooks
 - `example-agent` — example subagent.
 - `example-skill` — example skill.
 - `SessionStart` hook — runs `scripts/session-start.sh` when a session starts.
+  Checks the local plugin checkout against its upstream branch and, when it is
+  strictly behind with a clean working tree, fast-forwards it. Skips silently
+  when git is unavailable, the plugin is not a git checkout, no upstream is
+  configured, the remote is unreachable, the working tree is dirty, or the
+  branches have diverged.
 
 ## Develop
 

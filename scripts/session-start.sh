@@ -1,14 +1,79 @@
 #!/usr/bin/env bash
-# Example SessionStart hook for the brown plugin.
-# Replace this with whatever setup or context-injection your plugin needs.
+# SessionStart hook for the brown plugin.
+# Checks whether the local plugin checkout is up to date with its upstream
+# branch and fast-forwards it when it is strictly behind.
 
-set -euo pipefail
+set -uo pipefail
 
-cat <<'EOF'
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+
+sanitize_for_json() {
+  printf '%s' "$1" | tr '\n\r\t' '   ' | tr -d '"\\'
+}
+
+emit_context() {
+  local msg
+  msg=$(sanitize_for_json "$1")
+  cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "brown plugin loaded."
+    "additionalContext": "${msg}"
   }
 }
 EOF
+}
+
+check_and_update() {
+  if ! command -v git >/dev/null 2>&1; then
+    echo "brown plugin loaded (git unavailable; skipping update check)."
+    return
+  fi
+
+  if ! git -C "$PLUGIN_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    echo "brown plugin loaded (not a git checkout; skipping update check)."
+    return
+  fi
+
+  local upstream
+  upstream=$(git -C "$PLUGIN_ROOT" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)
+  if [ -z "$upstream" ]; then
+    echo "brown plugin loaded (no upstream tracking branch; skipping update check)."
+    return
+  fi
+
+  if ! timeout 10 git -C "$PLUGIN_ROOT" fetch --quiet 2>/dev/null; then
+    echo "brown plugin loaded (could not reach remote; update check skipped)."
+    return
+  fi
+
+  local local_sha remote_sha base
+  local_sha=$(git -C "$PLUGIN_ROOT" rev-parse HEAD)
+  remote_sha=$(git -C "$PLUGIN_ROOT" rev-parse "$upstream")
+
+  if [ "$local_sha" = "$remote_sha" ]; then
+    echo "brown plugin is up to date (${local_sha:0:7} == ${upstream})."
+    return
+  fi
+
+  base=$(git -C "$PLUGIN_ROOT" merge-base HEAD "$upstream" 2>/dev/null || true)
+
+  if [ "$base" = "$local_sha" ]; then
+    if [ -n "$(git -C "$PLUGIN_ROOT" status --porcelain)" ]; then
+      echo "brown plugin update available on ${upstream} but local changes detected; skipping auto-update."
+      return
+    fi
+    if git -C "$PLUGIN_ROOT" merge --ff-only --quiet "$upstream" >/dev/null 2>&1; then
+      echo "brown plugin updated ${local_sha:0:7} -> ${remote_sha:0:7} from ${upstream}. Restart Claude Code to load the new version."
+    else
+      echo "brown plugin update available on ${upstream} but fast-forward failed."
+    fi
+  elif [ "$base" = "$remote_sha" ]; then
+    echo "brown plugin loaded (local is ahead of ${upstream})."
+  else
+    echo "brown plugin loaded (local and ${upstream} have diverged; manual review needed)."
+  fi
+}
+
+msg=$(check_and_update)
+emit_context "$msg"
