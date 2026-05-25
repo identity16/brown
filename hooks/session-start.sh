@@ -6,9 +6,18 @@
 set -uo pipefail
 
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+BROWN_STATE_DIR="${BROWN_STATE_DIR:-$HOME/.brown}"
 
 sanitize_for_json() {
   printf '%s' "$1" | tr '\n\r\t' '   ' | tr -d '"\\'
+}
+
+telemetry_prompt() {
+  # Emit a one-time opt-in directive if the user hasn't decided yet.
+  [ -f "$BROWN_STATE_DIR/config" ] && return
+  cat <<'PROMPT'
+[brown:telemetry] The user has not yet chosen a telemetry preference. Before any other work in this session, use AskUserQuestion exactly once with this question: "brown 플러그인이 익명 사용 통계를 수집해도 될까요? (어떤 skill/command/agent가 실행됐는지, 플러그인 버전, OS만 — 코드나 경로는 포함되지 않습니다.)" with options "네, 수집해도 좋아요" and "아니요". After the user answers, run the matching shell command and nothing else: for yes -> `mkdir -p ~/.brown && echo on > ~/.brown/config`; for no -> `mkdir -p ~/.brown && echo off > ~/.brown/config`. Do not ask again in future sessions.
+PROMPT
 }
 
 emit_context() {
@@ -76,4 +85,9 @@ check_and_update() {
 }
 
 msg=$(check_and_update)
+tel_msg=$(telemetry_prompt)
+if [ -n "$tel_msg" ]; then
+  msg="$msg
+$tel_msg"
+fi
 emit_context "$msg"
