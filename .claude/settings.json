@@ -1,6 +1,7 @@
 {
   "enabledPlugins": {
-    "brown@brown": true
+    "brown@brown": true,
+    "skill-creator@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {}
 }
