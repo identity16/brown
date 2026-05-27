@@ -12,6 +12,7 @@ description: Decide the right Mermaid diagram type for the user's intent, clarif
 1. **무엇을 그릴지 결정** — 아래 Decision Tree로 Mermaid 다이어그램 타입 하나를 고른다.
 2. **부족한 정보를 명확화** — 해당 타입의 reference 파일을 읽고, 거기에 적힌 질문들을 `AskUserQuestion`으로 1차 질의한다.
 3. **Mermaid 코드 출력** — 답변을 바탕으로 ` ```mermaid ` 코드 블록을 작성한다. 별도 파일을 만들지 말고 채팅에 직접 코드 블록으로 보여준다.
+4. **렌더 미리보기 첨부** — 코드 블록 바로 아래에 `mermaid.ink` 이미지와 `mermaid.live` 편집 링크를 붙인다. CLI/클라우드 sandbox/모바일 앱 어디서나 그림으로 바로 확인할 수 있게.
 
 ## 1단계: 다이어그램 타입 결정
 
@@ -94,6 +95,59 @@ description: Decide the right Mermaid diagram type for the user's intent, clarif
 - 한 다이어그램에 모든 걸 욱여넣지 말고, 핵심을 먼저 보이고 사용자가 "더 자세히"라고 하면 그때 확장한다.
 
 렌더 후 짧게 한 줄로 "어디를 바꾸면 좋을지" 물어 보면 좋다 (예: "타입을 다른 걸로 바꿀까요? 노드를 더 쪼갤까요?").
+
+## 4단계: 렌더 미리보기 첨부
+
+코드 블록만 보내면 CLI에서는 그림이 안 보이고, 모바일/웹 앱에서도 ` ```mermaid ` 블록을 렌더해 주지 않는 경우가 많다. 그래서 **항상** Mermaid 코드 블록 바로 아래에 다음 두 줄을 함께 출력한다.
+
+```
+![diagram](https://mermaid.ink/img/pako:<인코딩>)
+편집·다른 테마로 보기: https://mermaid.live/edit#pako:<인코딩>
+```
+
+- `mermaid.ink` 이미지는 모바일/웹 앱 채팅에 **인라인으로 자동 렌더**된다. CLI에서도 URL을 클릭하면 브라우저에서 열린다.
+- `mermaid.live` 링크는 사용자가 직접 수정·테마 변경·SVG로 내보내기를 할 수 있는 에디터로 연결된다.
+- 두 URL의 `<인코딩>`은 같은 값(아래 헬퍼로 한 번에 계산).
+
+### 인코딩 헬퍼
+
+다이어그램 코드를 stdin으로 넘기면 pako 인코딩 문자열을 출력한다. `Bash`로 한 번 실행해 결과를 받아온다.
+
+```bash
+python3 - <<'PY' <<<"<여기에 mermaid 코드>"
+import base64, zlib, json, sys
+s = {"code": sys.stdin.read(), "mermaid": {"theme": "default"}}
+print(base64.urlsafe_b64encode(zlib.compress(json.dumps(s).encode(), 9)).decode())
+PY
+```
+
+heredoc 안에 mermaid 코드의 `\`, `"`, `$`, 백틱이 그대로 들어가도 안전하도록 가능하면 코드를 임시 파일로 저장한 뒤 `python3 helper.py < /tmp/diag.mmd` 식으로 호출해도 좋다.
+
+### 민감 정보 가드 — 반드시 확인하고 출력한다
+
+`mermaid.ink`/`mermaid.live`는 **외부 서비스**다. 인코딩된 다이어그램 코드가 그 서버를 거친다. 다음 중 하나라도 다이어그램에 포함돼 있다면 URL을 만들지 말고 코드 블록만 출력한 뒤, 사용자에게 "외부 렌더 서비스로 보내도 괜찮을지" 한 번 묻는다.
+
+- 사내 시스템/도메인/팀 이름이 식별 가능한 형태
+- 고객/사용자 식별 정보(이메일, 사번, 전화)
+- API 키·토큰·시크릿
+- 미공개 기능명, 비공개 프로젝트 코드명
+
+사용자가 "외부 OK"라고 명시했거나, 다이어그램이 공개해도 무방한 일반 예시(샘플 도메인, 가짜 데이터, 공개된 오픈소스 구조 등)면 그냥 첨부한다.
+
+### 한 번 마무리 예시
+
+````
+```mermaid
+flowchart TD
+    A["주문 생성"] --> B{"재고 있음?"}
+    B -- 예 --> C["결제 진행"]
+    B -- 아니오 --> D["품절 안내"]
+    C --> E(["완료"])
+```
+
+![diagram](https://mermaid.ink/img/pako:eNpVkMEKwjAMhl-l5KSg0Lk6owfFbb6BN-uhTTsUnIJseBh7d9MMBHsIhP_LF9IB6BUi7BQ0j9eHbu7dqXNtn4rf8WLB9oQN2d77HBU3OgSuWZ5ZuKrlcq_KQaCNY8hR1AnaIKZq6GBhnFwlwykqNMpYJW5HXqcNGaVsS8b2YY1bdv9PrQ0nfkVJW6yMGGoxBCO7UOPEceO1Nz9DJexpNp1SiAeJOJ_DQkEb3627B75_gO4WW_mJEBvXPzoYxy8-PlOQ)
+편집·테마 변경: https://mermaid.live/edit#pako:eNpVkMEKwjAMhl-l5KSg0Lk6owfFbb6BN-uhTTsUnIJseBh7d9MMBHsIhP_LF9IB6BUi7BQ0j9eHbu7dqXNtn4rf8WLB9oQN2d77HBU3OgSuWZ5ZuKrlcq_KQaCNY8hR1AnaIKZq6GBhnFwlwykqNMpYJW5HXqcNGaVsS8b2YY1bdv9PrQ0nfkVJW6yMGGoxBCO7UOPEceO1Nz9DJexpNp1SiAeJOJ_DQkEb3627B75_gO4WW_mJEBvXPzoYxy8-PlOQ
+````
 
 ## 참고 파일
 
