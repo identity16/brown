@@ -1,6 +1,6 @@
 ---
 name: draw-diagram
-description: Decide the right Mermaid diagram type for the user's intent, clarify the missing details via AskUserQuestion, then render the diagram as Mermaid syntax inside a ```mermaid code block. Use this skill whenever the user wants to draw / sketch / visualize / 시각화하다 / 도식화하다 / 그리다 something as a diagram — flowchart, sequence diagram, class diagram, state machine, ER/DB schema, gantt, mindmap, timeline, pie/quadrant/xy/sankey chart, gitgraph, C4, architecture, requirement. Trigger on Korean phrases like "시각화해줘", "도식화해줘", "그려줘", "그림으로 보여줘", "다이어그램 그려줘", "흐름도 그려줘", "플로우 그려줘", "시퀀스 다이어그램", "구조도", "아키텍처 그림", "ERD 그려줘", "상태 다이어그램", and English phrases like "diagram 그려줘", "draw a chart", "draw a diagram", "sketch this", "visualize this as", "mermaid". Also trigger when the user describes a process, flow, system architecture, data model, lifecycle, or relationships and asks to "보여줘" or "시각화" — even if they don't explicitly say "다이어그램" — since the goal is to convert their mental model into a renderable Mermaid spec.
+description: Render the user's mental model — flow, structure, relationship, lifecycle, architecture, schedule, data — as a Mermaid diagram and attach it as an inline PNG image. MUST trigger on Korean "시각화해줘", "시각화", "다이어그램으로 그려줘", "다이어그램 그려줘", "그려줘", "도식화해줘", "그림으로 보여줘", "흐름도", "플로우", "시퀀스 다이어그램", "구조도", "아키텍처 그림", "ERD 그려줘", "상태 다이어그램", "마인드맵", "간트", and English "draw a diagram / chart / flowchart", "visualize this", "sketch this", "as a diagram", "mermaid". Covers flowchart, sequence, class, state, ER, architecture, C4, gantt, timeline, pie, quadrant, xychart, sankey, journey, mindmap, gitgraph, requirement. Also trigger when the user describes a process / system / data model / lifecycle and asks to "보여줘" — even without the word "다이어그램" — since the goal is to turn their mental model into a picture.
 ---
 
 # Draw Diagram
@@ -11,8 +11,8 @@ description: Decide the right Mermaid diagram type for the user's intent, clarif
 
 1. **무엇을 그릴지 결정** — 아래 Decision Tree로 Mermaid 다이어그램 타입 하나를 고른다.
 2. **부족한 정보를 명확화** — 해당 타입의 reference 파일을 읽고, 거기에 적힌 질문들을 `AskUserQuestion`으로 1차 질의한다.
-3. **Mermaid 코드 출력** — 답변을 바탕으로 ` ```mermaid ` 코드 블록을 작성한다. 별도 파일을 만들지 말고 채팅에 직접 코드 블록으로 보여준다.
-4. **렌더 미리보기 첨부** — 코드 블록 바로 아래에 `mermaid.ink` 이미지와 `mermaid.live` 편집 링크를 붙인다. CLI/클라우드 sandbox/모바일 앱 어디서나 그림으로 바로 확인할 수 있게.
+3. **PNG로 렌더해 이미지로 첨부** — Mermaid 코드를 `mermaid.ink`로 PNG 변환해 `SendUserFile`로 채팅에 인라인 첨부한다. 사용자가 환경(CLI/모바일/웹)과 무관하게 **그림을 바로** 본다.
+4. **편집 링크와 코드 블록 함께 출력** — 사용자가 직접 손볼 수 있게 `mermaid.live` 편집 링크와 원본 ` ```mermaid ` 코드 블록을 같이 보낸다.
 
 ## 1단계: 다이어그램 타입 결정
 
@@ -81,51 +81,50 @@ description: Decide the right Mermaid diagram type for the user's intent, clarif
 - **답이 없어도 합리적 기본값으로 진행할 수 있다면**, 기본값을 보기로 넣어 두고 사용자가 빠르게 수락할 수 있게 한다.
 - **자동 모드(Auto Mode)에서도 1차 명확화는 한다.** Auto Mode의 "굳이 안 물어봐도 되면 묻지 마라"는 지침은, 다이어그램처럼 **사용자의 의도가 결과 모양을 직접 결정하는 산출물**에는 그대로 적용되지 않는다. 다만 질문은 짧고 본질적인 것만.
 
-## 3단계: Mermaid 코드 출력
+## 3단계: PNG로 렌더해 이미지로 첨부
 
-답변을 받으면 즉시 코드 블록으로 출력한다.
+답변이 모이면 Mermaid 코드를 짜고, **곧바로 PNG로 렌더해 `SendUserFile`로 첨부**한다. 사용자가 코드 블록 텍스트가 아니라 **그림 자체를 먼저** 보는 것이 이 스킬의 결과물이다.
 
-```mermaid
-<여기에 mermaid 코드>
-```
+다이어그램 작성 규칙:
 
-- 별도 파일을 만들거나 도구를 호출하지 말고, 답변 본문에 코드 블록으로 직접 보낸다 (사용자가 명시적으로 파일로 저장해달라고 하면 그때 저장).
-- 사용자 텍스트가 한국어면 노드 라벨도 한국어로 쓴다. 다만 **노드 ID는 ASCII로** (한글 ID는 일부 렌더러에서 깨진다). `A["주문 생성"] --> B["결제"]` 같은 식.
+- 사용자 텍스트가 한국어면 노드 라벨도 한국어로 쓴다. 다만 **노드 ID는 ASCII로** (한글 ID는 일부 렌더러에서 깨진다). 예: `A["주문 생성"] --> B["결제"]`.
 - 라벨에 `()`, `[]`, `:`, `;`, 따옴표가 들어가면 큰따옴표로 감싼다: `A["foo (bar)"]`.
 - 한 다이어그램에 모든 걸 욱여넣지 말고, 핵심을 먼저 보이고 사용자가 "더 자세히"라고 하면 그때 확장한다.
 
-렌더 후 짧게 한 줄로 "어디를 바꾸면 좋을지" 물어 보면 좋다 (예: "타입을 다른 걸로 바꿀까요? 노드를 더 쪼갤까요?").
+렌더·첨부 순서:
 
-## 4단계: 렌더 미리보기 첨부
+1. Mermaid 코드를 임시 파일에 저장한다: `/tmp/diagram-<짧은id>.mmd`.
+2. 아래 헬퍼로 pako 인코딩 문자열을 계산한다.
+3. `curl -sLf "https://mermaid.ink/img/pako:<인코딩>?type=png" -o /tmp/diagram-<짧은id>.png` 로 PNG를 받아 온다.
+4. `SendUserFile` 로 `/tmp/diagram-<짧은id>.png`를 보낸다. `status="normal"`, `caption`은 한 줄 설명 (예: "주문 결제 흐름 (flowchart)").
+5. 그 뒤 채팅 본문에 (a) `mermaid.live` 편집 링크 한 줄, (b) 원본 ` ```mermaid ` 코드 블록을 출력해서 사용자가 손쉽게 수정·재요청할 수 있게 한다.
 
-코드 블록만 보내면 CLI에서는 그림이 안 보이고, 모바일/웹 앱에서도 ` ```mermaid ` 블록을 렌더해 주지 않는 경우가 많다. 그래서 **항상** Mermaid 코드 블록 바로 아래에 다음 두 줄을 함께 출력한다.
-
-```
-![diagram](https://mermaid.ink/img/pako:<인코딩>)
-편집·다른 테마로 보기: https://mermaid.live/edit#pako:<인코딩>
-```
-
-- `mermaid.ink` 이미지는 모바일/웹 앱 채팅에 **인라인으로 자동 렌더**된다. CLI에서도 URL을 클릭하면 브라우저에서 열린다.
-- `mermaid.live` 링크는 사용자가 직접 수정·테마 변경·SVG로 내보내기를 할 수 있는 에디터로 연결된다.
-- 두 URL의 `<인코딩>`은 같은 값(아래 헬퍼로 한 번에 계산).
+렌더 끝에 짧게 한 줄로 "타입을 바꿀까요? 노드를 더 쪼갤까요?" 같은 후속 제안을 붙이면 좋다.
 
 ### 인코딩 헬퍼
 
-다이어그램 코드를 stdin으로 넘기면 pako 인코딩 문자열을 출력한다. `Bash`로 한 번 실행해 결과를 받아온다.
+`/tmp/diagram-<id>.mmd`에 mermaid 코드를 저장해 두고 호출. heredoc에 mermaid 코드를 직접 박지 말 것 — `\`, `` ` ``, `$`, 큰따옴표가 깨진다.
 
 ```bash
-python3 - <<'PY' <<<"<여기에 mermaid 코드>"
+python3 - "/tmp/diagram-<id>.mmd" <<'PY'
 import base64, zlib, json, sys
-s = {"code": sys.stdin.read(), "mermaid": {"theme": "default"}}
+code = open(sys.argv[1]).read()
+s = {"code": code, "mermaid": {"theme": "default"}}
 print(base64.urlsafe_b64encode(zlib.compress(json.dumps(s).encode(), 9)).decode())
 PY
 ```
 
-heredoc 안에 mermaid 코드의 `\`, `"`, `$`, 백틱이 그대로 들어가도 안전하도록 가능하면 코드를 임시 파일로 저장한 뒤 `python3 helper.py < /tmp/diag.mmd` 식으로 호출해도 좋다.
+### 다운로드/렌더 실패 시
 
-### 민감 정보 가드 — 반드시 확인하고 출력한다
+`curl`이 실패하거나(`-f` 덕분에 4xx/5xx면 비0 종료), 받은 파일 크기가 0 이거나, 네트워크가 막힌 환경이면 **PNG 첨부는 건너뛴다**. 빈 파일은 절대 `SendUserFile`로 보내지 않는다. 대신 채팅에 다음을 출력한다:
 
-`mermaid.ink`/`mermaid.live`는 **외부 서비스**다. 인코딩된 다이어그램 코드가 그 서버를 거친다. 다음 중 하나라도 다이어그램에 포함돼 있다면 URL을 만들지 말고 코드 블록만 출력한 뒤, 사용자에게 "외부 렌더 서비스로 보내도 괜찮을지" 한 번 묻는다.
+- "지금 환경에서 외부 렌더 서비스(`mermaid.ink`)를 못 잡아서 이미지 첨부를 건너뛰었어요. 코드 블록과 편집 링크로 대신 보냅니다." 한 줄
+- `mermaid.live` 편집 링크
+- ` ```mermaid ` 코드 블록
+
+## 4단계: 민감 정보 가드
+
+`mermaid.ink`/`mermaid.live`는 **외부 서비스**다. 인코딩된 다이어그램 코드가 그 서버를 거친다. 다음 중 하나라도 다이어그램에 포함돼 있다면 PNG 첨부와 편집 링크 둘 다 만들지 말고, 코드 블록만 출력한 뒤 사용자에게 "외부 렌더 서비스로 보내도 괜찮을지" 한 번 묻는다.
 
 - 사내 시스템/도메인/팀 이름이 식별 가능한 형태
 - 고객/사용자 식별 정보(이메일, 사번, 전화)
@@ -136,7 +135,11 @@ heredoc 안에 mermaid 코드의 `\`, `"`, `$`, 백틱이 그대로 들어가도
 
 ### 한 번 마무리 예시
 
+`SendUserFile` 호출 후 채팅에 다음을 출력:
+
 ````
+편집·테마 변경: https://mermaid.live/edit#pako:eNpVkMEKwjAMhl-l5KSg0Lk6owfFbb6BN-uhTTsUnIJseBh7d9MMBHsIhP_LF9IB6BUi7BQ0j9eHbu7dqXNtn4rf8WLB9oQN2d77HBU3OgSuWZ5ZuKrlcq_KQaCNY8hR1AnaIKZq6GBhnFwlwykqNMpYJW5HXqcNGaVsS8b2YY1bdv9PrQ0nfkVJW6yMGGoxBCO7UOPEceO1Nz9DJexpNp1SiAeJOJ_DQkEb3627B75_gO4WW_mJEBvXPzoYxy8-PlOQ
+
 ```mermaid
 flowchart TD
     A["주문 생성"] --> B{"재고 있음?"}
@@ -144,9 +147,6 @@ flowchart TD
     B -- 아니오 --> D["품절 안내"]
     C --> E(["완료"])
 ```
-
-![diagram](https://mermaid.ink/img/pako:eNpVkMEKwjAMhl-l5KSg0Lk6owfFbb6BN-uhTTsUnIJseBh7d9MMBHsIhP_LF9IB6BUi7BQ0j9eHbu7dqXNtn4rf8WLB9oQN2d77HBU3OgSuWZ5ZuKrlcq_KQaCNY8hR1AnaIKZq6GBhnFwlwykqNMpYJW5HXqcNGaVsS8b2YY1bdv9PrQ0nfkVJW6yMGGoxBCO7UOPEceO1Nz9DJexpNp1SiAeJOJ_DQkEb3627B75_gO4WW_mJEBvXPzoYxy8-PlOQ)
-편집·테마 변경: https://mermaid.live/edit#pako:eNpVkMEKwjAMhl-l5KSg0Lk6owfFbb6BN-uhTTsUnIJseBh7d9MMBHsIhP_LF9IB6BUi7BQ0j9eHbu7dqXNtn4rf8WLB9oQN2d77HBU3OgSuWZ5ZuKrlcq_KQaCNY8hR1AnaIKZq6GBhnFwlwykqNMpYJW5HXqcNGaVsS8b2YY1bdv9PrQ0nfkVJW6yMGGoxBCO7UOPEceO1Nz9DJexpNp1SiAeJOJ_DQkEb3627B75_gO4WW_mJEBvXPzoYxy8-PlOQ
 ````
 
 ## 참고 파일
