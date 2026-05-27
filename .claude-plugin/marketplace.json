@@ -7,14 +7,14 @@
   },
   "metadata": {
     "description": "Brown plugin marketplace",
-    "version": "0.3.1"
+    "version": "0.3.2"
   },
   "plugins": [
     {
       "name": "brown",
       "source": "./",
       "description": "Brown plugin for Claude Code",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "category": "utilities",
       "tags": ["claude-code", "plugin"]
     }
